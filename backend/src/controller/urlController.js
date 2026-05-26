@@ -1,18 +1,30 @@
+const urlService = require('../services/urlservices');
 
-const express = require('express');
-const router = express.Router();
-const { createShortUrl, getOriginalUrl } = require('../services/urlService');
-const createshorturl = (req, resp) => {
+const createShortUrl = async (req, resp) => {
     const { originalurl } = req.body;
-    const shorturl = createShortUrl(originalurl);
-    resp.json({ shorturl });
+    try {
+        const shorturl = await urlService.createShortUrl(originalurl);
+        resp.json({ shorturl });
+    } catch (error) {
+        resp.status(500).json({ error: error.message });
+    }
 }
-const getoriginalurl = (req, resp) => {
-    const { shorturl } = req.body;
-    const originalurl = getOriginalUrl(shorturl);
-    resp.json({ originalurl });
+
+const getOriginalUrl = async (req, resp) => {
+    const { shorturl } = req.params;
+    try {
+        const originalurl = await urlService.getOriginalUrl(shorturl);
+        if (originalurl) {
+            resp.json({ originalurl });
+        } else {
+            resp.status(404).json({ error: 'URL not found' });
+        }
+    } catch (error) {
+        resp.status(500).json({ error: error.message });
+    }
 }
-module.exports = { createshorturl, getoriginalurl };
+
+module.exports = { createShortUrl, getOriginalUrl };
 
 
 

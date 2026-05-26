@@ -1,10 +1,10 @@
-import { query } from '@/lib/db';
+// Import ko REQUIRE banao
+const pool = require('../../Lib/db');
 
 const createShortUrl = async (originalurl) => {
     const shorturl = Math.random().toString(36).substring(2, 8);
 
-    // SAVES TO REAL DB
-    await query(
+    await pool.query(
         'INSERT INTO URL (ORIGINAL_URL, SHORT_URL) VALUES ($1, $2)',
         [originalurl, shorturl]
     );
@@ -13,15 +13,13 @@ const createShortUrl = async (originalurl) => {
 }
 
 const getOriginalUrl = async (shorturl) => {
-    // FETCHES FROM REAL DB
-    const result = await query(
+    const result = await pool.query(
         'SELECT ORIGINAL_URL FROM URL WHERE SHORT_URL = $1',
         [shorturl]
     );
 
     if (result.rows.length > 0) {
-        // INCREMENTS CLICKS IN DB
-        await query(
+        await pool.query(
             'UPDATE URL SET CLICK = CLICK + 1 WHERE SHORT_URL = $1',
             [shorturl]
         );
@@ -31,4 +29,4 @@ const getOriginalUrl = async (shorturl) => {
     return null;
 }
 
-export default { createShortUrl, getOriginalUrl };
+module.exports = { createShortUrl, getOriginalUrl };
