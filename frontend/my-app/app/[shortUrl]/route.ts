@@ -2,12 +2,15 @@ import { redirect } from 'next/navigation';
 import redis from '@/lib/redis';
 import pool from '@/lib/db';
 
-export default async function RedirectPage({ params }) {
-  const { shortcode } = await params;
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ shortUrl: string }> }
+) {
+  const { shortUrl } = await params;
 
   // 1. Pehle REDIS (Cache) mein dekho
   // Alternative Server logic: Server par cache hit hone se DB ki cost bachti hai
-  const cachedUrl = await redis.get(shortcode);
+  const cachedUrl = await redis.get(shortUrl);
 
   if (cachedUrl) {
     console.log("🚀 CACHE HIT: Database ko chuna bhi nahi pada!");
@@ -18,7 +21,7 @@ export default async function RedirectPage({ params }) {
   console.log("🐢 CACHE MISS: Database se mangwana pad raha hai...");
   const result = await pool.query(
     'SELECT ORIGINAL_URL FROM URL WHERE SHORT_URL = $1',
-    [shortcode]
+    [shortUrl]
   );
 
   if (result.rows.length > 0) {
@@ -26,9 +29,10 @@ export default async function RedirectPage({ params }) {
 
     // 3. Agli baar ke liye REDIS mein save kar do (Set Expiry: 24 hours)
     // Alternative: Server par hum 'EX' (Expiry) zaroor lagate hain taaki RAM full na ho jaye
-    await redis.set(shortcode, originalUrl, 'EX', 86400);
+    await redis.set(shortUrl, originalUrl, 'EX', 86400);
 
     return redirect(originalUrl.startsWith('http') ? originalUrl : `https://${originalUrl}`);
   }
 
+  return new Response('Not Found', { status: 404 });
 }
